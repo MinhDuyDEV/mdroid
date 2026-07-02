@@ -238,7 +238,7 @@ def main():
             "additionalContext": context,
         }
     }
-    print(json.dumps(output))
+    print(json.dumps(output, ensure_ascii=False))
     sys.exit(0)
 
 

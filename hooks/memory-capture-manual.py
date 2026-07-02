@@ -72,7 +72,7 @@ def main():
     output = {
         "systemMessage": f"Saved to {scope} memories: {path}"
     }
-    print(json.dumps(output))
+    print(json.dumps(output, ensure_ascii=False))
     sys.exit(0)
 
 
