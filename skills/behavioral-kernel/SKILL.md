@@ -1,6 +1,6 @@
 ---
 name: behavioral-kernel
-description: Core execution discipline for agents. Defines how to approach tasks: understand before acting, verify with evidence, stop on blockers. Always relevant - loads for any coding, editing, or implementation task to ground agent work in safe defaults.
+description: "Core execution discipline for agents. Defines how to approach tasks: understand before acting, verify with evidence, stop on blockers. Always relevant - loads for any coding, editing, or implementation task to ground agent work in safe defaults."
 user-invocable: false
 ---
 
