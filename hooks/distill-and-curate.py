@@ -81,8 +81,15 @@ def read_transcript(transcript_path: str) -> list:
                     content = " ".join(text_parts)
                 if not isinstance(content, str) or not content.strip():
                     continue
-                # Skip system-reminder blocks and pure JSON tool inputs
-                if content.startswith("<system") or content.startswith("{"):
+                # Skip system-reminder blocks, pure JSON tool inputs, and
+                # the memory_context block that inject-memory.py emits at
+                # SessionStart. Re-ingesting that block would let the curator
+                # create garbage observations whose titles are fragments like
+                # "(relevance: 1.64)\n..." pulled straight from the injected
+                # context, causing a self-reinforcing corruption loop.
+                if (content.startswith("<system")
+                        or content.startswith("{")
+                        or "<memory_context>" in content):
                     continue
                 messages.append(content)
     except IOError:
@@ -131,7 +138,12 @@ def read_distillation(path: str) -> str:
 
 
 def split_sentences(text: str) -> list:
-    """Split text into sentences, filtered for context."""
+    """Split text into sentences, filtered for context.
+
+    Skips sentences that look like leaked hook output (memory_context
+    fragments, relevance markers, escaped-newline artifacts) so they can
+    never become observation titles/content.
+    """
     if not text:
         return []
     lines = text.split("\n")
@@ -141,7 +153,17 @@ def split_sentences(text: str) -> list:
     ]
     content = " ".join(content_lines)
     raw = re.split(r"(?<=[.!?])\s+", content)
-    return [s.strip() for s in raw if len(s.strip()) > 30]
+    out = []
+    for s in raw:
+        s = s.strip()
+        if len(s) <= 30:
+            continue
+        # Reject sentences carrying hook-output markers or escaped newlines.
+        # These appear when a transcript re-contains inject-memory output.
+        if "(relevance:" in s or "\\n" in s or "<memory_context>" in s:
+            continue
+        out.append(s)
+    return out
 
 
 # ---------------------------------------------------------------------------
