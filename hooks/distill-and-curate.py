@@ -73,6 +73,10 @@ def _is_leaked_output(content: str) -> bool:
     Exit code, (relevance:)) skip the message on their own. Weak markers
     (script names) only skip the message when 2+ co-occur, so that a single
     genuine mention of a script name in discussion is not over-filtered.
+
+    Also detects subagent system prompts (Task tool invocations) that leak
+    into transcripts as user messages — these are internal scaffolding, not
+    genuine engineering discussion.
     """
     # Strong markers: any one is enough to skip.
     for marker in _STRONG_LEAK_MARKERS:
@@ -80,6 +84,18 @@ def _is_leaked_output(content: str) -> bool:
             return True
     # Detect the "(relevance: N.NN)" signature emitted by inject-memory.py.
     if re.search(r"\(relevance:\s*\d", content):
+        return True
+    # Detect subagent system prompts leaked into transcripts. These appear
+    # when the Task tool's internal scaffolding gets recorded as a message.
+    # Markers: "# Task Tool Invocation", "Subagent type:", "---END SUBAGENT
+    # SYSTEM PROMPT---", "## Red Flags" (common in subagent prompt templates).
+    _SUBAGENT_MARKERS = (
+        "# Task Tool Invocation",
+        "Subagent type:",
+        "---END SUBAGENT SYSTEM PROMPT---",
+    )
+    subagent_hits = sum(1 for m in _SUBAGENT_MARKERS if m in content)
+    if subagent_hits >= 1:
         return True
     # Weak markers: need 2+ to co-occur to skip (avoids over-filtering genuine
     # discussion that merely mentions a script name).
@@ -196,16 +212,29 @@ def split_sentences(text: str) -> list:
     """Split text into sentences, filtered for context.
 
     Skips sentences that look like leaked hook output (memory_context
-    fragments, relevance markers, escaped-newline artifacts) so they can
-    never become observation titles/content.
+    fragments, relevance markers, escaped-newline artifacts) and markdown
+    list items / changelog-style content that should never become
+    observation titles/content.
     """
     if not text:
         return []
     lines = text.split("\n")
-    content_lines = [
-        line for line in lines
-        if not line.startswith("#") and not line.startswith("**") and line.strip()
-    ]
+    content_lines = []
+    for line in lines:
+        stripped = line.strip()
+        if not stripped:
+            continue
+        # Skip markdown headers and bold-only lines.
+        if stripped.startswith("#") or stripped.startswith("**"):
+            continue
+        # Skip markdown list items (- , * , + ) and table rows (| ).
+        # These are changelog/summary fragments, not natural sentences.
+        if re.match(r"^[-*+]\s", stripped) or stripped.startswith("|"):
+            continue
+        # Skip code blocks and blockquotes.
+        if stripped.startswith("```") or stripped.startswith(">"):
+            continue
+        content_lines.append(stripped)
     content = " ".join(content_lines)
     raw = re.split(r"(?<=[.!?])\s+", content)
     out = []
@@ -230,6 +259,11 @@ def split_sentences(text: str) -> list:
             or "inject-memory.py" in s
             or "Exit code" in s
         ):
+            continue
+        # Skip changelog/summary fragments: sentences that start with
+        # "Key updates", "Changes:", "Summary:", etc. followed by list-style
+        # content are commit summaries, not learnable observations.
+        if re.match(r"^(key updates|changes|summary|changelog)\s*:", s, re.IGNORECASE):
             continue
         out.append(s)
     return out

@@ -21,9 +21,10 @@ from markdown import read_memories
 
 
 # Markers that identify a garbage observation produced by the self-reinforcing
-# corruption loop (injected memory context re-ingested by the curator). We
-# filter these at read time so they never reach the context even if they
-# slipped past the curator's filters in a previous session.
+# corruption loop (injected memory context re-ingested by the curator) or by
+# changelog/summary fragments that slipped through. We filter these at read
+# time so they never reach the context even if they slipped past the curator's
+# filters in a previous session.
 _GARBAGE_MARKERS = (
     "(relevance:",
     "\\n",
@@ -34,6 +35,8 @@ _GARBAGE_MARKERS = (
     "### [",
     "inject-memory.py",
     "Exit code",
+    "# Task Tool Invocation",
+    "---END SUBAGENT SYSTEM PROMPT---",
 )
 
 
@@ -47,6 +50,16 @@ def _is_garbage_observation(obs: dict) -> bool:
             return True
     # Reject empty content or title.
     if not title.strip() or not content.strip():
+        return True
+    # Reject changelog/summary fragments: these are commit-summary style
+    # content (markdown list items, "Key updates:", etc.) that the curator
+    # should never have turned into observations.
+    import re as _re
+    if _re.match(r"^(key updates|changes|summary|changelog)\s*:", combined, _re.IGNORECASE):
+        return True
+    # Reject observations whose content is mostly markdown list items.
+    list_lines = [l for l in content.split("\n") if _re.match(r"^\s*[-*+]\s", l)]
+    if list_lines and len(list_lines) >= 2:
         return True
     return False
 
