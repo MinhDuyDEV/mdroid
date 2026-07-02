@@ -23,7 +23,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "lib
 
 from tfidf import extract_top_terms, select_key_sentences
 from patterns import match_patterns, extract_concepts
-from markdown import append_observation, get_existing_titles, is_duplicate
+from markdown import append_observation, get_existing_titles, get_existing_contents, is_duplicate, is_content_duplicate
 
 
 # ---------------------------------------------------------------------------
@@ -32,6 +32,61 @@ from markdown import append_observation, get_existing_titles, is_duplicate
 
 def get_distill_dir(cwd: str) -> str:
     return os.path.join(cwd, ".factory", "memory", "distillations")
+
+
+# Markers that strongly identify a message as leaked hook output / memory
+# context rather than genuine user or assistant prose. If ANY of these appear
+# in a message, the entire message is skipped. These are specific enough that
+# they essentially never appear in a genuine engineering discussion.
+_STRONG_LEAK_MARKERS = (
+    "<memory_context>",
+    "</memory_context>",
+    "hookSpecificOutput",
+    "additionalContext",
+    "Exit code",
+)
+
+# Weaker markers that only flag a message as leaked when TWO OR MORE co-occur.
+# A single script-name mention in genuine discussion (e.g. "I fixed the bug in
+# distill-and-curate.py") is not enough to skip the message, but a message
+# containing both a script name AND a relevance marker is almost certainly
+# leaked hook output.
+_WEAK_LEAK_MARKERS = (
+    "inject-memory.py",
+    "distill-and-curate.py",
+    "track-artifacts.py",
+    "memory-capture-manual.py",
+    "save-summary.py",
+)
+
+
+def _is_leaked_output(content: str) -> bool:
+    """Return True if content looks like leaked hook output or memory context.
+
+    Hook output leaks into transcripts two ways:
+    1. The raw additionalContext block (contains <memory_context> tags).
+    2. The rendered hook display text (contains hookSpecificOutput, Exit code,
+       script names) that the CLI prints and that users sometimes paste back.
+    Either way, re-ingesting it creates garbage observations, so we skip it.
+
+    Strong markers (hookSpecificOutput, additionalContext, <memory_context>,
+    Exit code, (relevance:)) skip the message on their own. Weak markers
+    (script names) only skip the message when 2+ co-occur, so that a single
+    genuine mention of a script name in discussion is not over-filtered.
+    """
+    # Strong markers: any one is enough to skip.
+    for marker in _STRONG_LEAK_MARKERS:
+        if marker in content:
+            return True
+    # Detect the "(relevance: N.NN)" signature emitted by inject-memory.py.
+    if re.search(r"\(relevance:\s*\d", content):
+        return True
+    # Weak markers: need 2+ to co-occur to skip (avoids over-filtering genuine
+    # discussion that merely mentions a script name).
+    weak_hits = sum(1 for marker in _WEAK_LEAK_MARKERS if marker in content)
+    if weak_hits >= 2:
+        return True
+    return False
 
 
 def read_transcript(transcript_path: str) -> list:
@@ -81,15 +136,15 @@ def read_transcript(transcript_path: str) -> list:
                     content = " ".join(text_parts)
                 if not isinstance(content, str) or not content.strip():
                     continue
-                # Skip system-reminder blocks, pure JSON tool inputs, and
-                # the memory_context block that inject-memory.py emits at
-                # SessionStart. Re-ingesting that block would let the curator
-                # create garbage observations whose titles are fragments like
-                # "(relevance: 1.64)\n..." pulled straight from the injected
-                # context, causing a self-reinforcing corruption loop.
-                if (content.startswith("<system")
-                        or content.startswith("{")
-                        or "<memory_context>" in content):
+                # Skip system-reminder blocks and pure JSON tool inputs.
+                if content.startswith("<system") or content.startswith("{"):
+                    continue
+                # Skip leaked hook output / injected memory context. Re-ingesting
+                # it lets the curator create garbage observations whose titles
+                # are fragments like "(relevance: 1.64)\n..." pulled straight
+                # from the injected context, causing a self-reinforcing
+                # corruption loop.
+                if _is_leaked_output(content):
                     continue
                 messages.append(content)
     except IOError:
@@ -160,7 +215,21 @@ def split_sentences(text: str) -> list:
             continue
         # Reject sentences carrying hook-output markers or escaped newlines.
         # These appear when a transcript re-contains inject-memory output.
-        if "(relevance:" in s or "\\n" in s or "<memory_context>" in s:
+        # Note: after json.loads, JSON-escaped \\n becomes real newlines, so
+        # we must check for the literal two-char sequence (backslash + n) that
+        # survives in the *rendered display text* users paste back, AND for
+        # the real newline form via the earlier split (already handled above).
+        if (
+            "(relevance:" in s
+            or "\\n" in s
+            or "<memory_context>" in s
+            or "</memory_context>" in s
+            or "hookSpecificOutput" in s
+            or "additionalContext" in s
+            or "### [" in s
+            or "inject-memory.py" in s
+            or "Exit code" in s
+        ):
             continue
         out.append(s)
     return out
@@ -200,6 +269,7 @@ def main():
 
     memories_path = get_memories_path(cwd)
     existing_titles = get_existing_titles(memories_path)
+    existing_contents = get_existing_contents(memories_path)
 
     today = datetime.datetime.now().strftime("%Y-%m-%d")
     for sentence in sentences:
@@ -211,17 +281,25 @@ def main():
         if is_duplicate(title, existing_titles):
             continue
 
+        content = sentence.strip()
+        # Content-level dedup catches re-ingested memory context that slipped
+        # through with slightly different titles (different relevance scores)
+        # but the same underlying sentence.
+        if is_content_duplicate(content, existing_contents):
+            continue
+
         concepts = extract_concepts(sentence, max_concepts=5)
         observation = {
             "date": today,
             "title": title,
             "type": obs_type,
             "confidence": "medium",
-            "content": sentence.strip(),
+            "content": content,
             "concepts": concepts,
         }
         append_observation(memories_path, observation)
         existing_titles.add(title)
+        existing_contents.add(content)
 
     sys.exit(0)
 

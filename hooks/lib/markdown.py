@@ -170,3 +170,60 @@ def get_existing_titles(path: str) -> set:
     """
     observations = read_memories(path)
     return {obs["title"].lower() for obs in observations}
+
+
+def get_existing_contents(path: str) -> set:
+    """Get all existing observation contents (normalized) for dedup.
+
+    Normalization lowercases, collapses whitespace, and strips backticks so
+    that content that differs only in spacing, case, or markdown backticks is
+    treated as a duplicate. This catches garbage re-ingestions where the same
+    sentence appears with slightly different leading context (e.g. different
+    "(relevance: N)" prefixes).
+
+    Args:
+        path: Path to memories.md file.
+
+    Returns:
+        Set of normalized content strings.
+    """
+    import re as _re
+    observations = read_memories(path)
+    normalized = set()
+    for obs in observations:
+        c = obs.get("content", "").strip().lower()
+        c = _re.sub(r"\s+", " ", c)
+        if c:
+            normalized.add(c)
+    return normalized
+
+
+def is_content_duplicate(content: str, existing_contents: set, prefix_len: int = 60) -> bool:
+    """Check if content is a duplicate of an existing observation content.
+
+    Comparison is case-insensitive, whitespace-normalized, and backtick-stripped
+    on the first `prefix_len` characters. Backtick stripping matters because the
+    same sentence can be stored with or without markdown backticks (e.g. when
+    re-ingested from rendered hook output vs. genuine assistant prose). This
+    catches the self-reinforcing corruption loop where injected memory context
+    gets re-ingested with slightly different leading context but the same core
+    sentence.
+
+    Args:
+        content: The content to check.
+        existing_contents: Set of normalized existing content strings.
+        prefix_len: Number of chars to compare for prefix matching.
+
+    Returns:
+        True if duplicate, False otherwise.
+    """
+    import re as _re
+    norm = _re.sub(r"\s+", " ", content.strip().lower())
+    norm = norm.replace("`", "")
+    prefix = norm[:prefix_len]
+    if not prefix:
+        return False
+    for existing in existing_contents:
+        if existing.replace("`", "")[:prefix_len] == prefix:
+            return True
+    return False

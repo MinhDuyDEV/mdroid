@@ -20,6 +20,57 @@ from tokenize import tokenize
 from markdown import read_memories
 
 
+# Markers that identify a garbage observation produced by the self-reinforcing
+# corruption loop (injected memory context re-ingested by the curator). We
+# filter these at read time so they never reach the context even if they
+# slipped past the curator's filters in a previous session.
+_GARBAGE_MARKERS = (
+    "(relevance:",
+    "\\n",
+    "<memory_context>",
+    "</memory_context>",
+    "hookSpecificOutput",
+    "additionalContext",
+    "### [",
+    "inject-memory.py",
+    "Exit code",
+)
+
+
+def _is_garbage_observation(obs: dict) -> bool:
+    """Return True if an observation looks like corrupted re-ingested memory."""
+    title = obs.get("title", "")
+    content = obs.get("content", "")
+    combined = title + " " + content
+    for marker in _GARBAGE_MARKERS:
+        if marker in combined:
+            return True
+    # Reject empty content or title.
+    if not title.strip() or not content.strip():
+        return True
+    return False
+
+
+def _dedupe_observations(observations: list) -> list:
+    """Remove content-level duplicates, keeping the first occurrence.
+
+    Normalizes whitespace and case so that observations that differ only in
+    spacing (a common artifact of the corruption loop) collapse to one.
+    """
+    import re
+    seen = set()
+    out = []
+    for obs in observations:
+        norm = re.sub(r"\s+", " ", obs.get("content", "").strip().lower())
+        prefix = norm[:80]
+        if prefix and prefix in seen:
+            continue
+        if prefix:
+            seen.add(prefix)
+        out.append(obs)
+    return out
+
+
 def get_memories_path(cwd: str) -> str:
     return os.path.join(cwd, ".factory", "memories.md")
 
@@ -194,6 +245,12 @@ def main():
         sys.exit(0)
 
     observations = read_memories(memories_path)
+    if not observations:
+        sys.exit(0)
+
+    # Filter out garbage observations (from the corruption loop) and dedupe.
+    observations = [obs for obs in observations if not _is_garbage_observation(obs)]
+    observations = _dedupe_observations(observations)
     if not observations:
         sys.exit(0)
 
