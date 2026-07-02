@@ -147,7 +147,14 @@ def apply_confidence_boost(score: float, confidence: str) -> float:
 
 
 def format_context(scored_observations: list) -> str:
-    """Format scored observations into context string."""
+    """Format scored observations into context string.
+
+    When the observation content is just a full-form of the (possibly
+    truncated) title, showing both is redundant. In that case we only emit
+    the full content and drop the truncated title line, so the reader sees
+    the complete sentence rather than a chopped copy followed by the same
+    sentence again.
+    """
     if not scored_observations:
         return ""
     lines = [
@@ -159,8 +166,16 @@ def format_context(scored_observations: list) -> str:
         obs_type = obs.get("type", "unknown")
         title = obs.get("title", "Untitled")
         content = obs.get("content", "")
-        lines.append(f"### [{obs_type}] {title} (relevance: {score:.2f})")
-        lines.append(content)
+        # The curator stores the full sentence as content and a truncated copy
+        # as the title. When title is a prefix of content (ignoring the trailing
+        # '...'), the title adds no information, so skip the redundant line.
+        title_clean = title[:-3].rstrip() if title.endswith("...") else title
+        if content and title_clean and content.startswith(title_clean):
+            lines.append(f"### [{obs_type}] {content} (relevance: {score:.2f})")
+        else:
+            lines.append(f"### [{obs_type}] {title} (relevance: {score:.2f})")
+            if content and content != title:
+                lines.append(content)
         lines.append("")
     lines.append("</memory_context>")
     return "\n".join(lines)

@@ -71,11 +71,38 @@ def match_patterns(sentence: str):
         return None
     for obs_type, pattern in TYPE_PATTERNS:
         if pattern.search(sentence):
-            title = sentence.strip()
-            if len(title) > 80:
-                title = title[:77] + "..."
+            title = _truncate_title(sentence.strip(), max_len=80)
             return (obs_type, title)
     return None
+
+
+def _truncate_title(title: str, max_len: int = 80) -> str:
+    """Truncate a title to max_len chars, cutting at a word boundary.
+
+    If the title fits within max_len, return it unchanged.
+    Otherwise, find the last word boundary at or before max_len and append '...'.
+    Never cuts a word in half (the original implementation cut mid-token, e.g.
+    'custom:` + fi...' instead of 'custom:` + field...').
+
+    Args:
+        title: The candidate title (already stripped).
+        max_len: Maximum allowed length including the '...' suffix.
+
+    Returns:
+        The truncated title ending in '...' if it was too long, else the
+        original title.
+    """
+    if len(title) <= max_len:
+        return title
+    # Reserve 3 chars for the '...' suffix.
+    budget = max_len - 3
+    # Find the last whitespace at or before the budget so we don't split a word.
+    cut = title.rfind(" ", 0, budget + 1)
+    if cut <= 0:
+        # No whitespace in range: fall back to a hard cut (e.g. a single long
+        # token like a path or identifier).
+        cut = budget
+    return title[:cut].rstrip() + "..."
 
 
 def extract_concepts(sentence: str, max_concepts: int = 5) -> list:
