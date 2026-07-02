@@ -1,7 +1,8 @@
 ---
 name: vision
 description: UI/UX visual analysis agent. Analyzes screenshots, mockups, and designs to extract structure, hierarchy, and implementation guidance. Use for frontend work and design-to-code tasks.
-model: inherit
+model: custom:mimo-v2.5
+reasoningEffort: max
 tools: ["Read", "Grep", "Glob", "LS"]
 ---
 

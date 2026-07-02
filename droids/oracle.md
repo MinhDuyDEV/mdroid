@@ -1,8 +1,8 @@
 ---
 name: oracle
 description: Convergence Judge for /review. Reads ALL findings from parallel review sub-agents and sees the whole elephant - groups symptoms into root causes, dismisses false positives with evidence, names missing mechanisms, and resolves cross-axis conflicts. Use via /review Phase 5 (conditional trigger). Model should be stronger than reviewer sub-agents.
-model: claude-opus-4-5-20251101
-reasoningEffort: high
+model: custom:GLM-5.2-[Ollama-Cloud]-0
+reasoningEffort: max
 tools: ["Read", "Grep", "Glob", "LS"]
 ---
 

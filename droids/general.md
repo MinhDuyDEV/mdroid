@@ -1,7 +1,8 @@
 ---
 name: general
 description: Fast general-purpose agent for simple tasks. Use for quick lookups, small edits, formatting, and parallelizable subtasks that don't need the full build workflow.
-model: inherit
+model: custom:deepseek-v4-flash
+reasoningEffort: max
 tools: ["Read", "Edit", "Create", "Execute", "Grep", "Glob", "LS"]
 ---
 

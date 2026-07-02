@@ -1,7 +1,8 @@
 ---
 name: plan
 description: Architecture planning agent. Breaks down features into implementation plans with dependency graphs, wave assignments, and TDD-ordered tasks. Use before /build for complex features.
-model: inherit
+model: custom:GLM-5.2-[Ollama-Cloud]-0
+reasoningEffort: max
 tools: ["Read", "Grep", "Glob", "LS", "Create"]
 ---
 

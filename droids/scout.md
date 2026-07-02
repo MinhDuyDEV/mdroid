@@ -1,7 +1,8 @@
 ---
 name: scout
 description: External research agent. Searches the web, fetches documentation, and synthesizes findings with confidence levels. Use for /research and any task needing external information.
-model: inherit
+model: custom:deepseek-v4-flash
+reasoningEffort: max
 tools: ["Read", "Grep", "Glob", "LS", "WebSearch", "FetchUrl"]
 ---
 

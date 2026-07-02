@@ -1,7 +1,8 @@
 ---
 name: review
 description: Read-only code review specialist. Checks diffs for correctness, security, performance, and test coverage. Use via /review or Task tool for focused review of completed work.
-model: inherit
+model: custom:minimax-m3
+reasoningEffort: max
 tools: ["Read", "Grep", "Glob", "LS"]
 ---
 

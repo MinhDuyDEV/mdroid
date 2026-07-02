@@ -1,7 +1,8 @@
 ---
 name: explore
 description: Read-only code search and discovery agent. Maps codebases, finds patterns, and reports structure without modifying anything. Use for research, discovery, and codebase orientation.
-model: inherit
+model: custom:mimo-v2.5
+reasoningEffort: max
 tools: ["Read", "Grep", "Glob", "LS"]
 ---
 

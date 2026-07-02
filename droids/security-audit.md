@@ -1,7 +1,8 @@
 ---
 name: security-audit
 description: Focused security review specialist. Checks diffs and codebases for injection, auth, data exposure, and supply chain risks using STRIDE and OWASP Top 10. Use via /review (security persona) or Task tool for dedicated security audits.
-model: inherit
+model: custom:deepseek-v4-pro
+reasoningEffort: max
 tools: ["Read", "Grep", "Glob", "LS"]
 ---
 
