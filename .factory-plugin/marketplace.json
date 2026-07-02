@@ -1,0 +1,14 @@
+{
+  "name": "mdroid",
+  "description": "Production-grade engineering workflow for Factory Droid",
+  "owner": {
+    "name": "MinhDuyDEV"
+  },
+  "plugins": [
+    {
+      "name": "mdroid",
+      "description": "Production-grade engineering workflow for Factory Droid - combines OpenCodeKit artifacts lifecycle, agent-skills anti-rationalization patterns, and Superpowers TDD discipline",
+      "source": "./"
+    }
+  ]
+}
