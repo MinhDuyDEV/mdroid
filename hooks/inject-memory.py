@@ -217,7 +217,7 @@ def main():
     # Apply boosts and filter
     scored_observations = []
     for idx, score in ranked:
-        if score < 0.5:
+        if score < 0.3:
             continue
         obs = observations[idx]
         boosted_score = apply_recency_boost(score, obs.get("date", ""))

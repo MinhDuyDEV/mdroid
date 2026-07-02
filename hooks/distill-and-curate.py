@@ -37,6 +37,13 @@ def get_distill_dir(cwd: str) -> str:
 def read_transcript(transcript_path: str) -> list:
     """Read a JSONL transcript and extract user + assistant text messages.
 
+    Factory transcript format: each line is a JSON object with:
+      - "type": "message" | "session_start" | "todo_state" | ...
+      - "message": {"role": "user"|"assistant", "content": [...] | "...", ...}
+
+    Content can be a list of blocks (each with "type": "text"|"tool_use"|"tool_result"|"thinking")
+    or a plain string. We extract only "text" blocks, skipping system-reminders and tool I/O.
+
     Returns a list of message strings.
     """
     if not transcript_path or not os.path.exists(transcript_path):
@@ -52,10 +59,17 @@ def read_transcript(transcript_path: str) -> list:
                     entry = json.loads(line)
                 except json.JSONDecodeError:
                     continue
-                role = entry.get("role", "")
+                # Only process message-type entries
+                if entry.get("type") != "message":
+                    continue
+                # Role and content are nested under "message"
+                msg = entry.get("message", {})
+                if not isinstance(msg, dict):
+                    continue
+                role = msg.get("role", "")
                 if role not in ("user", "assistant"):
                     continue
-                content = entry.get("content", "")
+                content = msg.get("content", "")
                 if isinstance(content, list):
                     text_parts = []
                     for block in content:
@@ -65,9 +79,12 @@ def read_transcript(transcript_path: str) -> list:
                         elif isinstance(block, str):
                             text_parts.append(block)
                     content = " ".join(text_parts)
-                if isinstance(content, str) and content.strip():
-                    if not content.startswith("<") or len(content) > 50:
-                        messages.append(content)
+                if not isinstance(content, str) or not content.strip():
+                    continue
+                # Skip system-reminder blocks and pure JSON tool inputs
+                if content.startswith("<system") or content.startswith("{"):
+                    continue
+                messages.append(content)
     except IOError:
         pass
     return messages

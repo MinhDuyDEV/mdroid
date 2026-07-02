@@ -13,26 +13,46 @@ except ImportError:
 
 
 # (type, compiled_regex) tuples for matching observation sentences.
+# Keywords are English + Vietnamese to support multilingual sessions.
+# Note: \b word boundary is unreliable with accented Vietnamese characters
+# (Python \b treats them as word chars, but boundary detection is inconsistent
+# across regex engines). For Vietnamese keywords, we use lookahead/lookbehind
+# for whitespace/punctuation instead of \b.
+# For colon-terminated English keywords (warning:, note:), no trailing \b
+# because \b requires a word char on both sides and ":" is non-word.
+_VI_BOUNDARY = r"(?:\s|$|[,.;!?:])"
+
 TYPE_PATTERNS = [
     ("decision", re.compile(
         r"\b(decided to|chose to|went with|opted for|switched to|migrated to|"
-        r"settled on|picked|selected|adopted)\b", re.IGNORECASE
+        r"settled on|picked|selected|adopted)\b"
+        r"|(?:quyết định|chọn|chấp nhận|lựa chọn)(?=" + _VI_BOUNDARY + r")",
+        re.IGNORECASE
     )),
     ("bugfix", re.compile(
         r"\b(fixed|resolved|patched|corrected|bug in|error in|crash in|"
-        r"workaround for|hotfix for)\b", re.IGNORECASE
+        r"workaround for|hotfix for)\b"
+        r"|(?:khắc phục|sửa|chữa lỗi|tái chính)(?=" + _VI_BOUNDARY + r")",
+        re.IGNORECASE
     )),
     ("pattern", re.compile(
-        r"\b(pattern:|convention:|best practice|standard practice|"
-        r"we always|we never|rule:|guideline:)\b", re.IGNORECASE
+        r"\b(best practice|standard practice|we always|we never)\b"
+        r"|\b(pattern|convention|rule|guideline)(?=\s*:)"
+        r"|(?:luật|quy tắc|chuẩn mực|luôn luôn)(?=" + _VI_BOUNDARY + r")",
+        re.IGNORECASE
     )),
     ("discovery", re.compile(
         r"\b(found that|discovered|noticed|learned that|turns out|realized|"
-        r"observed that|saw that)\b", re.IGNORECASE
+        r"observed that|saw that)\b"
+        r"|(?:phát hiện|thấy rằng|nhận ra|tìm ra)(?=" + _VI_BOUNDARY + r")",
+        re.IGNORECASE
     )),
     ("warning", re.compile(
-        r"\b(warning:|caution:|careful with|gotcha|pitfall|don't use|avoid|"
-        r"beware|never do|danger:|important:|note:)\b", re.IGNORECASE
+        r"\b(warning|caution|careful with|gotcha|pitfall|"
+        r"don't use|avoid|beware|never do|danger|important|note)"
+        r"(?=\s*:)"
+        r"|(?:cảnh báo|cẩn thận|tránh|không dùng|không sử dụng)(?=" + _VI_BOUNDARY + r")",
+        re.IGNORECASE
     )),
 ]
 

@@ -115,11 +115,38 @@ Follow the conventions documented in `.factory/rules/`:
 
 If `.factory/rules/` already exists, read existing files and update only missing sections. Do not overwrite.
 
-## Phase 5: Verify
+## Phase 5: Scaffold CONTEXT.md (domain glossary)
 
-- Confirm `AGENTS.md` exists and has all sections filled.
+Create a `CONTEXT.md` at the project root as the domain glossary stub. This is the shared language between the user and the agent — it reduces verbosity and keeps naming consistent. Use the format in `skills/domain-modeling/CONTEXT-FORMAT.md`.
+
+Create the file lazily: scaffold the structure with a heading and an empty `## Language` section. Do NOT invent terms — terms get added inline by the `domain-modeling` skill as they resolve during `/spec` and `/build`.
+
+```markdown
+# [Project Name]
+
+[One or two sentence description of what this project is and why it exists.]
+
+## Language
+
+<!-- Domain terms are added here as they resolve, using:
+**Term**:
+[One or two sentence definition.]
+_Avoid:_ [synonyms to avoid]
+-->
+```
+
+If `CONTEXT.md` already exists, read it and leave it alone — the `domain-modeling` skill maintains it. Reference it in AGENTS.md:
+```markdown
+## Domain Language
+See `CONTEXT.md` for the project's domain glossary. The `/spec` and `/build` skills maintain it via the `domain-modeling` skill. ADRs live in `docs/adr/`.
+```
+
+## Phase 6: Verify
+
+- Confirm `AGENTS.md` exists and has all sections filled (including the Domain Language pointer).
 - Confirm `.factory/tech-stack.md` exists.
 - Confirm `.factory/rules/` exists with at least 3 rule files.
+- Confirm `CONTEXT.md` exists at the project root (glossary stub).
 - Confirm the commands listed actually run (execute one test command to verify).
 - Run `/readiness-report` to evaluate the repo's AI-readiness level. If below Level 4, run `/readiness-fix` to close gaps.
 

@@ -66,38 +66,44 @@ droid mcp add linear https://mcp.linear.app/mcp --type http
 
 | Command | Purpose | When to use |
 |---|---|---|
-| `/init` | Bootstrap AGENTS.md + tech-stack.md + rules stubs | New or existing project lacking AGENTS.md |
-| `/spec` | Define what to build (PRD) | Before implementing a feature (3+ files) |
-| `/plan` | Break down into dependency-ordered tasks | Complex features (4+ files, multiple systems) |
-| `/build` | Implement with TDD | After /spec (and optionally /plan) |
+| `/init` | Bootstrap AGENTS.md + tech-stack.md + rules stubs + CONTEXT.md glossary stub | New or existing project lacking AGENTS.md |
+| `/spec` | Define what to build (PRD), sharpen domain language via CONTEXT.md | Before implementing a feature (3+ files) |
+| `/plan` | Break down into tracer-bullet vertical slices + dependency waves (Wave 0 = prefactoring) | Complex features (4+ files, multiple systems) |
+| `/build` | Implement with TDD (agree seams, red-green, one slice at a time) | After /spec (and optionally /plan) |
 | `/verify` | Run verification gates | After /build, before /ship |
-| `/review` | Multi-persona parallel review | After /verify, before /ship |
+| `/review` | Two-axis review (Standards + Spec) + optional vertical personas + conditional Convergence Judge | After /verify, before /ship |
 | `/ship` | Commit, PR, cleanup | After /verify + /review pass |
 
 ### Standalone commands
 
 | Command | Purpose | When to use |
 |---|---|---|
-| `/fix` | Debug and fix bugs (2-3 files) | Bugfix or resolving /verify, /review issues |
+| `/fix` | Diagnose and fix bugs (tight red feedback loop, regression test) | Bugfix or resolving /verify, /review issues |
 | `/research` | External research with confidence levels | Unknowns before /spec, or standalone |
 | `/audit` | Codebase pattern audit | Finding tech debt, anti-patterns |
 | `/interview-me` | One-question-at-a-time requirements extraction | Vague requirements |
 | `/grill-me` | Aggressive requirement interrogation | Specs/plans that feel too optimistic |
+| `/handoff` | Compact conversation into a temp file for a fresh session | Context window full, or branching off (e.g. into /prototype) |
+| `/prototype` | Throwaway code answering one design question (logic or UI) | Sanity-check a state model or explore a UI |
+| `/improve-codebase-architecture` | Scan for deepening opportunities (shallow -> deep modules) | Periodic upkeep; or after /fix post-mortem reveals no good seam |
 | `/clean` | Remove stale artifact directories | Clean up old feature artifacts |
 | `/mission-prep` | Prepare repo for Factory Missions | Before /missions on multi-feature projects |
-| `/interview-me` | One-question-at-a-time requirements extraction | Vague requirements |
-| `/grill-me` | Aggressive requirement interrogation | Specs/plans that feel too optimistic |
+| `/writing-great-skills` | Reference for writing/editing skills well | When authoring or pruning a SKILL.md |
 
 ### Workflow
 
 ```
 User Request
-     ↓
-[TRIAGE GATE] → Trivial? Do directly. Bugfix? /fix. Research? /research. Audit? /audit.
-     ↓
-Multi-feature? → /mission-prep → /missions (agent-driven orchestration)
-     ↓
-Single feature → /spec → /plan (optional) → /build → /verify → /review → /ship → DONE
+     |
+[TRIAGE GATE] -> Trivial? Do directly. Bugfix? /fix (tight red loop). Research? /research. Audit? /audit.
+     |
+Multi-feature? -> /mission-prep -> /missions (agent-driven orchestration)
+     |
+Single feature -> /spec (sharpen domain language via CONTEXT.md) -> /plan (tracer-bullet + waves) 
+                  -> /build (seam agreement, TDD) -> /verify -> /review (Standards + Spec) -> /ship -> DONE
+     |
+On-ramps: /fix post-mortem -> /improve-codebase-architecture; design question -> /prototype; 
+          full context -> /handoff; external unknowns -> /research -> /spec
 ```
 
 ## Factory Missions integration
@@ -175,13 +181,14 @@ Run `/readiness-report` to check your repo, then `/readiness-fix` to close gaps.
 
 ## Custom droids
 
-7 specialized subagents, invoked via the Task tool:
+8 specialized subagents, invoked via the Task tool:
 
 | Droid | Role | Tools |
 |---|---|---|
 | `explore` | Read-only code search and discovery | Read, Grep, Glob, LS |
 | `plan` | Architecture planning | Read, Grep, Glob, LS, Create |
 | `review` | Code review specialist (read-only) | Read, Grep, Glob, LS |
+| `oracle` | Convergence Judge for /review (strong model, high reasoning) | Read, Grep, Glob, LS |
 | `scout` | External research (web, docs) | Read, Grep, Glob, LS, WebSearch, FetchUrl |
 | `vision` | UI/UX visual analysis | Read, Grep, Glob, LS |
 | `security-audit` | Focused security review (STRIDE, OWASP) | Read, Grep, Glob, LS |
@@ -191,30 +198,37 @@ The main agent (interactive Droid) owns implementation directly via the `/build`
 
 ## Skills
 
-26 skills total: 12 workflow commands (user-invoked via `/command`) and 14 background skills (auto-loaded when relevant).
+33 skills total: 19 workflow commands (user-invoked via `/command`) and 14 background skills (auto-loaded when relevant).
 
-### Workflow commands (12)
+### Workflow commands (19, user-invoked)
 
 | Command | Purpose |
 |---|---|
-| `/init` | Bootstrap AGENTS.md + tech-stack.md |
-| `/spec` | Define what to build (PRD) |
-| `/plan` | Break down into dependency-ordered tasks |
-| `/build` | Implement with TDD |
+| `/init` | Bootstrap AGENTS.md + tech-stack.md + CONTEXT.md glossary stub |
+| `/spec` | Define what to build (PRD), sharpen domain language |
+| `/plan` | Tracer-bullet vertical slices + dependency waves (Wave 0 = prefactoring) |
+| `/build` | Implement with TDD (seam agreement, red-green, one slice at a time) |
 | `/verify` | Run verification gates |
-| `/review` | Multi-persona parallel review |
+| `/review` | Two-axis review (Standards + Spec) + optional vertical personas |
 | `/ship` | Commit, PR, cleanup |
-| `/fix` | Debug and fix bugs |
+| `/fix` | Diagnose and fix bugs (tight red feedback loop, regression test) |
 | `/research` | External research with confidence levels |
 | `/audit` | Codebase pattern audit |
 | `/clean` | Remove stale artifact directories |
+| `/interview-me` | One-question-at-a-time interview |
+| `/grill-me` | Requirement interrogation |
+| `/handoff` | Compact conversation into a temp file for a fresh session |
+| `/prototype` | Throwaway code answering one design question (logic or UI) |
+| `/improve-codebase-architecture` | Scan for deepening opportunities (shallow -> deep modules) |
+| `/mission-prep` | Prepare repo for Factory Missions |
+| `/writing-great-skills` | Reference for writing/editing skills well |
 
 ### Background skills (14, auto-loaded when relevant)
 
 - **behavioral-kernel**: Core execution discipline
 - **defense-in-depth**: Security hardening patterns
 - **incremental-implementation**: Thin vertical slices
-- **development-lifecycle**: SDLC routing
+- **development-lifecycle**: SDLC routing + router maintenance rule
 - **doubt-driven-development**: Adversarial review (CLAIM -> EXTRACT -> DOUBT -> RECONCILE -> STOP)
 - **context-engineering**: Feed agents right info at right time
 - **observability-and-instrumentation**: Structured logging, RED metrics, tracing
@@ -223,8 +237,8 @@ The main agent (interactive Droid) owns implementation directly via the `/build`
 - **documentation-and-adrs**: ADRs and docs that stay useful
 - **ci-cd-and-automation**: Shift Left, Faster is Safer
 - **shipping-and-launch**: Pre-launch checklists, staged rollouts
-- **interview-me**: One-question-at-a-time interview (user-invocable)
-- **grill-me**: Requirement interrogation (user-invocable)
+- **domain-modeling**: Build/sharpen the project's domain glossary (CONTEXT.md) and ADRs
+- **codebase-design**: Shared deep-module vocabulary (module, interface, depth, seam, adapter)
 
 ## Memory system
 
@@ -277,12 +291,36 @@ Each feature gets a slug and an artifact directory:
 /ship → cleans up .factory/artifacts/.active
 ```
 
+## Domain language & design vocabulary
+
+mdroid carries two shared vocabularies that run *beneath* the commands, reducing verbosity and keeping design consistent:
+
+- **`CONTEXT.md`** (project root) is the domain glossary. The `domain-modeling` skill maintains it inline as terms resolve during `/spec` and `/build`. It is a glossary only — no implementation details. ADRs live in `docs/adr/` (offered sparingly: only when hard-to-reverse + surprising + real-trade-off).
+- **`codebase-design`** is the deep-module vocabulary (module, interface, depth, seam, adapter, leverage, locality). `/build` agrees seams up front using it; `/improve-codebase-architecture` surveys for deepening opportunities using it.
+
+Use `CONTEXT.md` vocabulary for the domain and `codebase-design` vocabulary for the architecture in every suggestion, review, and plan. Don't drift into "component," "service," "API," or "boundary."
+
+## References
+
+8 reference checklists, loaded on demand by the skills that need them:
+
+| Reference | Used by |
+|---|---|
+| `definition-of-done.md` | Standing "done" bar |
+| `testing-patterns.md` | `/build` RED phase, `/review` tests persona |
+| `security-checklist.md` | `/review` security persona |
+| `performance-checklist.md` | `/review` performance persona (--deep) |
+| `accessibility-checklist.md` | Frontend review |
+| `observability-checklist.md` | Instrumentation |
+| `orchestration-patterns.md` | Multi-persona orchestration |
+| `code-smells.md` | `/review` Standards axis (12 Fowler smells baseline) |
+
 ## Project setup
 
 For each project using mdroid:
 
 ```bash
-# 1. Run /init to bootstrap AGENTS.md
+# 1. Run /init to bootstrap AGENTS.md, tech-stack.md, rules stubs, and CONTEXT.md glossary stub
 /init
 
 # 2. Start building

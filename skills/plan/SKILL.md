@@ -41,7 +41,21 @@ Use the Task tool with `explore` droid (or Grep/Glob directly for small projects
 - Identify reusable utilities or components.
 - Map the current structure of affected modules.
 
-## Phase 3: Goal-backward task derivation
+Read `CONTEXT.md` (if it exists) so task titles and descriptions use the project's domain glossary vocabulary, and respect ADRs in the area you're touching.
+
+### Prefactoring scan
+
+Look for opportunities to **prefactor** the code to make the implementation easier: "Make the change easy, then make the easy change." A small preparatory refactor (extract a module, introduce a seam, split a god object) done *before* the feature can make every subsequent task simpler. If you spot one, propose it as **Wave 0** (prefactoring) — a task or two that must complete before the feature tasks. Don't over-engineer; only propose prefactoring when it genuinely lowers the cost of the feature tasks.
+
+## Phase 3: Tracer-bullet task derivation
+
+Break the spec into **tracer bullet** tasks. Each task is a thin **vertical slice** that cuts through ALL integration layers end-to-end, NOT a horizontal slice of one layer.
+
+- Each slice delivers a narrow but COMPLETE path through every layer (schema, API, UI, tests).
+- A completed slice is demoable or verifiable on its own.
+- Any prefactoring (Phase 2) is scheduled first, as Wave 0.
+
+Work backward from the spec's success criteria (goal-backward), but shape each task as a vertical slice, not a layer.
 
 Start from the spec's success criteria and work backward:
 
@@ -61,11 +75,12 @@ For each task, specify:
 
 List all tasks and their dependencies. Verify:
 - No circular dependencies.
-- Every dependency is an earlier task.
+- Every dependency is an earlier task (or a Wave 0 prefactoring task).
 - Tasks with no dependencies form Wave 1.
 
 ## Phase 5: Wave assignment
 
+- **Wave 0**: prefactoring tasks (if any) — must complete before feature work.
 - **Wave 1**: tasks with no dependencies.
 - **Wave 2**: tasks depending only on Wave 1 tasks.
 - **Wave N**: tasks depending only on earlier waves.
@@ -110,14 +125,19 @@ Show the user the plan summary (task count, wave count, estimated scope). Ask:
 | "I'll define verification during implementation" | No verification = no task. Define it now. |
 | "This task is big but I'll handle it in one go" | Split it. Big tasks hide failures. |
 | "Waves aren't needed, I'll go sequentially" | Waves enable parallelism. Cheap to assign. |
+| "I'll slice by layer — schema task, then API task, then UI task" | That's horizontal slicing. Each task is a tracer bullet: a vertical slice cutting through all layers, demoable on its own. |
+| "Prefactoring is just gold-plating" | Only propose it when it genuinely lowers feature cost. "Make the change easy, then make the easy change." |
+| "I'll skip CONTEXT.md vocabulary in task titles" | Task titles in domain terms keep the agent oriented. Code-name titles drift. |
 
 ## Red Flags
 
 - Tasks without verification commands.
 - Circular dependencies.
+- Horizontal slicing (one task per layer instead of vertical slices).
 - Tasks touching 6+ files.
 - Plan doesn't reference the spec's success criteria.
 - No dependency graph (just a flat list).
+- Prefactoring proposed but not scheduled as Wave 0 (feature tasks race ahead of it).
 
 ## Related Commands
 

@@ -20,18 +20,26 @@
 ## Dependency Graph
 
 ```
-T1 (wave 1) ---> T3 (wave 2)
-T2 (wave 1) ---> T3 (wave 2)
-T3 (wave 2) ---> T4 (wave 3)
+W0 (prefactor) ---> T1 (wave 1) ---> T3 (wave 2)
+                   T2 (wave 1) ---> T3 (wave 2)
+                   T3 (wave 2) ---> T4 (wave 3)
 ```
 
 ## Tasks
 
+### Wave 0 (prefactoring, optional — must complete before feature work)
+
+- **[P1]** [Preparatory refactor that makes the feature easier]
+  - Files: `src/path/to/refactor.ts`
+  - Depends on: none
+  - Verify: `[command]`
+  - TDD: write failing test -> implement -> refactor
+
 ### Wave 1 (no dependencies)
 
-- **[T1]** [Description]
+- **[T1]** [Description — a vertical slice cutting through all layers]
   - Files: `src/path/to/file.ts`
-  - Depends on: none
+  - Depends on: [P1 if applicable, else none]
   - Verify: `[command]`
   - TDD: write failing test -> implement -> refactor
 

@@ -7,7 +7,7 @@ disable-model-invocation: true
 
 # /build - Implement with TDD
 
-Execute implementation tasks with test-driven development and per-task verification.
+Execute implementation tasks with test-driven development and per-task verification. TDD here is the red -> green loop; refactor belongs to `/review`, not the implementation cycle.
 
 ## Modes
 
@@ -22,7 +22,16 @@ Execute implementation tasks with test-driven development and per-task verificat
 2. Read `.factory/artifacts/<slug>/spec.md`.
 3. If mode is not `auto` or `--skip-plan`: read `.factory/artifacts/<slug>/plan.md`.
 4. Read `AGENTS.md` for build/test/lint commands.
-5. Create or read `.factory/artifacts/<slug>/progress.md` (use `templates/progress.md`).
+5. Read `CONTEXT.md` (if it exists) so test names and interface vocabulary match the project's domain language, and respect ADRs in the area you're touching.
+6. Create or read `.factory/artifacts/<slug>/progress.md` (use `templates/progress.md`).
+
+## Phase 1b: Agree the seams
+
+Tests live at **seams** — the public boundaries where you observe behaviour without reaching inside. Before writing any test, write down the seams under test and confirm them with the user (AskUser if needed). No test is written at an unconfirmed seam.
+
+Ask: "What's the public interface, and which seams should we test?" Prefer existing seams to new ones. Use the highest seam possible — the fewer seams across the codebase, the better (the ideal is one). If new seams are needed, propose them at the highest point you can.
+
+This is the `codebase-design` vocabulary: a seam is where a module's interface lives. Agree them up front so testing effort lands on critical paths and complex logic, not every edge case.
 
 ## Phase 2: Derive tasks (auto / --skip-plan only)
 
@@ -55,19 +64,30 @@ For each wave (or task if sequential):
 
 ## Phase 4: TDD cycle (per task)
 
+Tests verify behaviour through public interfaces, not implementation details. Code can change entirely; tests shouldn't. A good test reads like a specification — "user can checkout with valid cart" tells you exactly what capability exists — and survives refactors because it doesn't care about internal structure.
+
 ### RED - Write a failing test
-1. Write a test that captures the task's requirement.
+1. Write a test at an **agreed seam** (Phase 1b) that captures the task's requirement.
 2. Run it. It must fail for the right reason (not a syntax error).
 3. If it fails for the wrong reason, fix the test.
+
+**One slice at a time.** One seam, one test, one minimal implementation per cycle. Each test is a **tracer bullet** that responds to what the last cycle taught you. Don't write all tests first then all implementation (**horizontal slicing**) — that tests *imagined* behaviour and commits to test structure before understanding the implementation.
+
+Watch for test **anti-patterns** (load `references/testing-patterns.md` for detail):
+- **Implementation-coupled** — mocks internal collaborators, tests private methods, or verifies through a side channel. The tell: the test breaks when you refactor but behaviour hasn't changed.
+- **Tautological** — the assertion recomputes the expected value the way the code does (`expect(add(a, b)).toBe(a + b)`), so it passes by construction and can never disagree. Expected values must come from an independent source of truth — a known-good literal, a worked example, the spec.
+- **Horizontal slicing** — all tests first, then all implementation (see above).
 
 ### GREEN - Minimal implementation
 1. Write the minimum code to make the test pass.
 2. Run the test. It must pass.
-3. Don't add anything not required by the test.
+3. Don't add anything not required by the test. No speculative features, no abstraction for hypothetical needs.
 
 ### REFACTOR - Clean up
 1. Improve the code without changing behavior.
 2. Run the test again. It must still pass.
+
+**Refactor is not part of the core loop's value.** It belongs to the `/review` stage. Keep refactor minimal here — a quick naming or extraction in the same cycle is fine; architectural refactoring is a `/review` or `/improve-codebase-architecture` concern, not a build-step concern.
 
 ### Commit
 1. Stage only the files this task touched. NEVER `git add .`.
@@ -123,18 +143,28 @@ When all waves complete:
 | "The test is obvious, I'll skip RED" | RED proves the test checks the right thing. Skipping it means your test might pass for the wrong reason. |
 | "I'll write tests after the code" | That's not TDD. Tests written after tend to test the implementation, not the requirement. |
 | "This is too simple for TDD" | Simple things break too. The test takes 30 seconds. |
+| "I'll write all tests first, then implement" | That's horizontal slicing — tests imagined behaviour before you understand the implementation. One slice at a time. |
+| "I'll mock the internal collaborator" | That's implementation-coupled. Test through the agreed seam, not internals. |
+| "expect(add(a,b)).toBe(a+b)" | That's tautological — it can never fail. Expected values come from an independent source of truth. |
+| "I'll add this abstraction for future needs" | Speculative generality. Don't. Inline back until a real need shows. |
+| "I'll agree seams as I go" | Agree them up front (Phase 1b). Unconfirmed seams scatter testing effort. |
 | "I'll verify at the end" | Per-task verification isolates failures. End-only verification hides which task broke things. |
 | "I'll use git add . to save time" | Never. Stage specific files. `git add .` commits artifacts, logs, and stray files. |
 | "The refactor is safe, I'll skip re-running tests" | Re-run. Always. Refactors break things silently. |
 
 ## Red Flags
 
+- Writing tests at unagreed seams (no Phase 1b confirmation).
 - Committing without running the task's verification command.
 - Using `git add .` or `git add -A`.
 - Skipping the RED phase ("I know it'll fail").
+- Tautological assertions (expected value computed the same way the code computes it).
+- Implementation-coupled tests (mocking internals, testing private methods).
+- Horizontal slicing (all tests first, then all implementation).
 - Touching files outside the task's declared scope.
 - Moving to the next task before the current one passes all gates.
 - Implementing multiple tasks before verifying any.
+- Architectural refactoring inside a build cycle (belongs to /review or /improve-codebase-architecture).
 
 ## Related Commands
 

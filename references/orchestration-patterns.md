@@ -79,6 +79,67 @@ Rules:
 - Reduce step aggregates results.
 - Use when items are numerous and independent.
 
+## Pattern 5: Convergence Judge (conditional)
+
+A systemic-pattern finder that reads ALL fan-out findings to see the whole elephant. Used by `/review` (Phase 5). Each reviewer sees one part; the Judge sees the whole. Spawned via the `oracle` droid, which runs a **stronger model** than the reviewer sub-agents — convergence requires deeper reasoning than individual finding-by-finding review.
+
+```
+                    +---> [Standards: general]    ---> findings
+                    +---> [Spec: general]         ---> findings
+[review coordinator] +---> [Security: security-audit] ---> findings
+                    +---> [Tests: general]        ---> findings
+                                        |
+                          [trigger gate: findings >= 5, OR cross-axis conflict, OR --deep]
+                                        |
+                            +-----------+-----------+
+                            |   (gate closed)       |   (gate open)
+                            v                       v
+                    aggregate flat           [Convergence Judge: oracle droid (strong model)] ---> Judge's report
+                                                    |
+                                                    v
+                                        aggregate + Judge's report
+```
+
+### Model asymmetry
+
+Reviewer sub-agents use `general` / `security-audit` (typically `model: inherit` — fast, same model as parent). The Convergence Judge uses the `oracle` droid, configured with a **stronger model + high reasoning effort**. This is deliberate:
+
+- Reviewers are the blind men — each feels one part, fast, accepts false positives.
+- The oracle sees the whole elephant — it needs deeper reasoning to converge symptoms into root causes.
+
+If `oracle` is unavailable, fall back to `review` droid (convergence quality drops, but the phase still runs).
+
+### Trigger gate
+
+The Judge is **conditional** — it fires only when findings are numerous enough to hide a systemic pattern:
+
+- **Default mode**: fires when findings ≥ 5 OR any cross-axis/cross-persona conflict exists.
+- **`--deep` mode**: always fires, regardless of count.
+- **`--quick` mode**: never fires.
+
+When the gate does not fire, aggregate flat (Pattern 1). No Judge for a 2-finding diff.
+
+### What the Judge does
+
+1. **Convergence** — groups findings that are symptoms of one root cause.
+2. **False-positive dismissal** — flags findings that are not bugs, with evidence.
+3. **Missing mechanism** — names the absent guard/layer/seam that would prevent the cluster.
+4. **Conflict resolution** — resolves cross-axis disagreements with a reasoned verdict.
+
+### Rules
+
+- The Judge runs **after** all fan-out sub-agents return (sequential, not parallel).
+- The Judge reads ALL findings at once — this is its power and the reason it is sequential.
+- The Judge does **not merge axes** (Standards and Spec stay separate in the final report).
+- The Judge does **not rerank within an axis** (sub-agents own their rankings).
+- The Judge does **not spawn sub-agents** (flat hierarchy — see anti-pattern below).
+- The Judge does **not fix** — it reports. The coordinator decides fixes.
+- The Judge accepts false positives as input: sub-agents bias toward raising, the Judge prunes with evidence.
+
+### Anti-pattern: Judge merging axes
+
+The Judge's convergence must not collapse the Standards and Spec axes into one list. The two axes exist so neither masks the other. The Judge reads both, finds systemic patterns across both, but reports **additively** — its report sits alongside the axis reports, never replaces them.
+
 ## Anti-pattern: personas-dont-invoke-personas
 
 **Never let a spawned persona spawn its own personas.** This causes:

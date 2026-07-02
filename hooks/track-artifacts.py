@@ -95,6 +95,7 @@ def enforce_limits(state: dict) -> None:
 def _extract_first_user_intent(transcript_path: str) -> str:
     """Read the transcript JSONL and return the first user message text.
 
+    Factory transcript format: each line has {"type":"message","message":{"role":"user","content":[...]}}
     This is used as a fallback to populate the session intent when the
     UserPromptSubmit hook hasn't populated it yet.
     """
@@ -108,9 +109,12 @@ def _extract_first_user_intent(transcript_path: str) -> str:
                     entry = json.loads(line)
                 except json.JSONDecodeError:
                     continue
-                if entry.get("role") != "user":
+                if entry.get("type") != "message":
                     continue
-                content = entry.get("content", "")
+                msg = entry.get("message", {})
+                if not isinstance(msg, dict) or msg.get("role") != "user":
+                    continue
+                content = msg.get("content", "")
                 if isinstance(content, list):
                     parts = []
                     for block in content:

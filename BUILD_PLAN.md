@@ -48,11 +48,12 @@ OpenCodeKit has 60+ skills, but research shows:
 mdroid/
 ├── .factory-plugin/
 │   └── plugin.json                    # Plugin manifest
-├── droids/                             # 7 custom droids (from OpenCodeKit agents)
+├── droids/                             # 8 custom droids (7 from OpenCodeKit + oracle convergence judge)
 │   ├── build.md                        # Primary dev agent
 │   ├── explore.md                      # Read-only code search
 │   ├── plan.md                         # Architecture planning
 │   ├── review.md                       # Code review specialist
+│   ├── oracle.md                       # Convergence Judge (strong model, high reasoning)
 │   ├── scout.md                        # External research
 │   ├── vision.md                       # UI/UX visual analysis
 │   └── general.md                      # Fast simple tasks
@@ -957,7 +958,7 @@ mkdir -p ~/workspace/mdroid/{.factory-plugin,droids,skills,hooks,references,temp
 
 Create `.factory-plugin/plugin.json` (see section 4.1 above).
 
-### Step 3: Port 7 custom droids
+### Step 3: Port 8 custom droids
 
 Read each file from `/tmp/opencodekit-template/.opencode/agent/`:
 - `build.md`, `explore.md`, `plan.md`, `review.md`, `scout.md`, `vision.md`, `general.md`
