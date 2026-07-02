@@ -175,11 +175,10 @@ Run `/readiness-report` to check your repo, then `/readiness-fix` to close gaps.
 
 ## Custom droids
 
-8 specialized subagents, invoked via the Task tool:
+7 specialized subagents, invoked via the Task tool:
 
 | Droid | Role | Tools |
 |---|---|---|
-| `build` | Primary dev agent, full edit access | Read, Edit, Create, Execute, Grep, Glob, LS |
 | `explore` | Read-only code search and discovery | Read, Grep, Glob, LS |
 | `plan` | Architecture planning | Read, Grep, Glob, LS, Create |
 | `review` | Code review specialist (read-only) | Read, Grep, Glob, LS |
@@ -187,6 +186,8 @@ Run `/readiness-report` to check your repo, then `/readiness-fix` to close gaps.
 | `vision` | UI/UX visual analysis | Read, Grep, Glob, LS |
 | `security-audit` | Focused security review (STRIDE, OWASP) | Read, Grep, Glob, LS |
 | `general` | Fast simple tasks | Read, Edit, Create, Execute, Grep, Glob, LS |
+
+The main agent (interactive Droid) owns implementation directly via the `/build` skill. No separate "build" subagent is needed because the main agent has the same tools and runs the full TDD workflow itself. Subagents are used for isolation (read-only review, planning, exploration) or specialized capabilities (web research, visual analysis), not for duplicating the main agent's edit capability.
 
 ## Skills
 

@@ -32,6 +32,16 @@ If no plan exists:
 3. For `--skip-plan`: create a TodoWrite list with the tasks.
 4. Proceed to implementation.
 
+## Delegation
+
+Use the Task tool to delegate focused subtasks to specialized droids:
+- `explore` for read-only code search and discovery (find patterns, map structure).
+- `review` for code review of completed work before proceeding.
+- `scout` for external research (docs, API references, prior art).
+- `general` for simple parallel tasks that don't need the full TDD cycle.
+
+Do NOT delegate the core implementation. You own the edits. Use `general` droids only for independent tasks within a wave that can run in parallel (no shared files).
+
 ## Phase 3: Wave-based execution
 
 For each wave (or task if sequential):
