@@ -1,0 +1,81 @@
+{
+  "description": "mdroid 5-layer memory system: automatic cross-session learning via TF-IDF, BM25, and regex heuristics. No LLM tokens used.",
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 ${DROID_PLUGIN_ROOT}/hooks/inject-memory.py",
+            "timeout": 10
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Read|Edit|Create|ApplyPatch",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 ${DROID_PLUGIN_ROOT}/hooks/track-artifacts.py",
+            "timeout": 5
+          }
+        ]
+      },
+      {
+        "matcher": "Create|Edit|ApplyPatch",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash ${DROID_PLUGIN_ROOT}/hooks/structural-check.sh",
+            "timeout": 30
+          }
+        ]
+      }
+    ],
+    "PreCompact": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 ${DROID_PLUGIN_ROOT}/hooks/save-summary.py",
+            "timeout": 10
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 ${DROID_PLUGIN_ROOT}/hooks/distill-and-curate.py",
+            "timeout": 60
+          }
+        ]
+      }
+    ],
+    "SessionEnd": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 ${DROID_PLUGIN_ROOT}/hooks/session-end-cleanup.py",
+            "timeout": 5
+          }
+        ]
+      }
+    ],
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 ${DROID_PLUGIN_ROOT}/hooks/memory-capture-manual.py"
+          }
+        ]
+      }
+    ]
+  }
+}
